@@ -1,0 +1,22 @@
+{
+  "name": "component-stream",
+  "version": "0.0.0",
+  "description": "Streaming component builder straight from GitHub",
+  "main": "index.js",
+  "dependencies": {
+    "component-require": "~0.1.1",
+    "q": "~0.8.12",
+    "pass-stream": "~0.0.6",
+    "request": "~2.12.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ForbesLindesay/component-stream.git"
+  },
+  "author": "",
+  "license": "MIT"
+}
