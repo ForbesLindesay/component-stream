@@ -18,6 +18,12 @@ function get(repo, tag, type, options) {
       output.write(requirejs);
     }
     write(output, repo, tag, type, options, {})
+      .then(function (res) {
+        console.warn('writing aliases');
+        for (var i = 0; i < res.aliases.length; i++) {
+          output.write('require.alias("' + res.aliases[i][0] + '", "' + res.aliases[i][1] + '");\n');
+        };
+      })
       .done(function () {
         output.strm.end();
       },function (err) {
@@ -28,17 +34,24 @@ function get(repo, tag, type, options) {
 }
 
 function write(output, repo, tag, type, options, done) {
-  if (done[repo]) return;
-  done[repo] = true;
+  if (done[repo]) return Q.resolve(done[repo]);
   return getConfig(repo, tag)
     .then(function (config) {
+      done[repo] = {config: config, aliases: []};
       var res = Q.resolve(null);
+      var aliases = [];
 
       if (config.dependencies && options.excludeDependencies != true) {
         Object.keys(config.dependencies)
           .forEach(function (dependency) {
             res = res.then(function () {
-              return write(output, dependency, config.dependencies[dependency], type, options, done);
+              return write(output, dependency, config.dependencies[dependency], type, options, done)
+                .then(function (res) {
+                  for (var i = 0; i < res.aliases.length; i++) {
+                    aliases.push(res.aliases[i]);
+                  }
+                  aliases.push([dependency.replace(/\//, '-') + '/index.js', repo.replace(/\//, '-') + '/deps/' + dependency.replace(/^[^\/]*\//, '') + '/index.js'])
+                });
             });
           });
       }
@@ -46,14 +59,19 @@ function write(output, repo, tag, type, options, done) {
         Object.keys(config.development)
           .forEach(function (dependency) {
             res = res.then(function () {
-              return write(output, dependency, config.dependencies[dependency], type, options, done);
+              return write(output, dependency, config.dependencies[dependency], type, options, done)
+                .then(function (res) {
+                  for (var i = 0; i < res.aliases.length; i++) {
+                    aliases.push(res.aliases[i]);
+                  }
+                });
             });
           });
       }
       if (config.scripts && type === 'js') {
         config.scripts.forEach(function (script) {
           res = res.then(function () {
-            output.write('\nrequire.register("' + repo.replace(/\//g, '-') + '/' + script + '", function (exports, require, module) {\n  ');
+            output.write('require.register("' + repo.replace(/\//g, '-') + '/' + script + '", function(exports, require, module){\n');
             return output.write(getFile(repo, tag, script).pipe(indent()));
           })
           .then(function () {
@@ -71,7 +89,13 @@ function write(output, repo, tag, type, options, done) {
           });
         });
       }
-      return res;
+      return res
+        .then(function () {
+          return {
+            config: config,
+            aliases: aliases
+          };
+        });
     });
 }
 
@@ -107,6 +131,6 @@ function getFile(repo, tag, path) {
 }
 function indent() {
   return require('pass-stream')(function (data) {
-    this.queueWrite(data.toString().replace(/\n/g, '\n  '));
+    this.queueWrite(data.toString()/*.replace(/\n/g, '\n  ')*/);
   });
 }
