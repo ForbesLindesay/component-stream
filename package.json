@@ -1,6 +1,6 @@
 {
   "name": "component-stream",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Streaming component builder straight from GitHub",
   "main": "index.js",
   "dependencies": {
