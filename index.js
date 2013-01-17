@@ -17,7 +17,7 @@ function get(repo, tag, type, options) {
       console.warn('writing requirejs');
       output.write(requirejs);
     }
-    write(output, repo, tag, type, options, {})
+    write(output, repo, tag, type, options, {}, repo.replace(/^[^\/]*\//, ''))
       .then(function (res) {
         console.warn('writing aliases');
         for (var i = 0; i < res.aliases.length; i++) {
@@ -33,7 +33,7 @@ function get(repo, tag, type, options) {
   return output.strm;
 }
 
-function write(output, repo, tag, type, options, done) {
+function write(output, repo, tag, type, options, done, alias) {
   if (done[repo]) return Q.resolve(done[repo]);
   return getConfig(repo, tag)
     .then(function (config) {
@@ -50,7 +50,7 @@ function write(output, repo, tag, type, options, done) {
                   for (var i = 0; i < res.aliases.length; i++) {
                     aliases.push(res.aliases[i]);
                   }
-                  aliases.push([dependency.replace(/\//, '-') + '/index.js', repo.replace(/\//, '-') + '/deps/' + dependency.replace(/^[^\/]*\//, '') + '/index.js'])
+                  aliases.push([dependency.replace(/\//, '-') + '/index.js', (alias || repo.replace(/\//, '-')) + '/deps/' + dependency.replace(/^[^\/]*\//, '') + '/index.js']);
                 });
             });
           });
@@ -64,6 +64,7 @@ function write(output, repo, tag, type, options, done) {
                   for (var i = 0; i < res.aliases.length; i++) {
                     aliases.push(res.aliases[i]);
                   }
+                  aliases.push([dependency.replace(/\//, '-') + '/index.js', (alias || repo.replace(/\//, '-')) + '/deps/' + dependency.replace(/^[^\/]*\//, '') + '/index.js']);
                 });
             });
           });
@@ -71,14 +72,12 @@ function write(output, repo, tag, type, options, done) {
       if (config.scripts && type === 'js') {
         config.scripts.forEach(function (script) {
           res = res.then(function () {
-            output.write('require.register("' + repo.replace(/\//g, '-') + '/' + script + '", function(exports, require, module){\n');
+            output.write('require.register("' + (alias || repo.replace(/\//, '-')) + '/' + script + '", function(exports, require, module){\n');
             return output.write(getFile(repo, tag, script).pipe(indent()));
           })
           .then(function () {
             output.write('\n});\n');
           });
-
-          //todo: output aliases
         });
       }
       if (config.styles && type === 'css') {

@@ -227,6 +227,7 @@ module.exports = function(val){
     case '[object RegExp]': return 'regexp';
     case '[object Arguments]': return 'arguments';
     case '[object Array]': return 'array';
+    case '[object String]': return 'string';
   }
 
   if (val === null) return 'null';
@@ -598,7 +599,7 @@ ClassList.prototype.contains = function(name){
 };
 
 });
-require.register("component-dom/index.js", function(exports, require, module){
+require.register("dom/index.js", function(exports, require, module){
 
 /**
  * Module dependencies.
@@ -647,7 +648,7 @@ exports.attrs = attrs;
  * Return a dom `List` for the given
  * `html`, selector, or element.
  *
- * @param {String|Element|List} 
+ * @param {String|Element|List}
  * @return {List}
  * @api public
  */
@@ -674,7 +675,7 @@ function dom(selector, context) {
 
   // html
   if ('<' == selector.charAt(0)) {
-    return new List([domify(selector)], selector);
+    return new List([domify(selector)[0]], selector);
   }
 
   // selector
@@ -1012,36 +1013,64 @@ List.prototype.addClass = function(name){
 /**
  * Remove the given class `name`.
  *
- * @param {String} name
+ * @param {String|RegExp} name
  * @return {List} self
  * @api public
  */
 
 List.prototype.removeClass = function(name){
   var el;
+
+  if ('regexp' == type(name)) {
+    for (var i = 0; i < this.els.length; ++i) {
+      el = this.els[i];
+      el._classes = el._classes || classes(el);
+      var arr = el._classes.array();
+      for (var j = 0; j < arr.length; j++) {
+        if (name.test(arr[j])) {
+          el._classes.remove(arr[j]);
+        }
+      }
+    }
+    return this;
+  }
+
   for (var i = 0; i < this.els.length; ++i) {
     el = this.els[i];
     el._classes = el._classes || classes(el);
     el._classes.remove(name);
   }
+
   return this;
 };
 
 /**
- * Toggle the given class `name`.
+ * Toggle the given class `name`,
+ * optionally a `bool` may be given
+ * to indicate that the class should
+ * be added when truthy.
  *
  * @param {String} name
+ * @param {Boolean} bool
  * @return {List} self
  * @api public
  */
 
-List.prototype.toggleClass = function(name){
+List.prototype.toggleClass = function(name, bool){
   var el;
+  var fn = 'toggle';
+
+  // toggle with boolean
+  if (2 == arguments.length) {
+    fn = bool ? 'add' : 'remove';
+  }
+
   for (var i = 0; i < this.els.length; ++i) {
     el = this.els[i];
     el._classes = el._classes || classes(el);
-    el._classes.toggle(name);
+    el._classes[fn](name);
   }
+
   return this;
 };
 
@@ -1141,12 +1170,12 @@ attrs.forEach(function(name){
 
 
 });
-require.alias("component-type/index.js", "component-dom/deps/type/index.js");
-require.alias("component-event/index.js", "component-dom/deps/event/index.js");
+require.alias("component-type/index.js", "dom/deps/type/index.js");
+require.alias("component-event/index.js", "dom/deps/event/index.js");
 require.alias("component-matches-selector/index.js", "component-delegate/deps/matches-selector/index.js");
 require.alias("component-event/index.js", "component-delegate/deps/event/index.js");
-require.alias("component-delegate/index.js", "component-dom/deps/delegate/index.js");
-require.alias("component-indexof/index.js", "component-dom/deps/indexof/index.js");
-require.alias("component-domify/index.js", "component-dom/deps/domify/index.js");
+require.alias("component-delegate/index.js", "dom/deps/delegate/index.js");
+require.alias("component-indexof/index.js", "dom/deps/indexof/index.js");
+require.alias("component-domify/index.js", "dom/deps/domify/index.js");
 require.alias("component-indexof/index.js", "component-classes/deps/indexof/index.js");
-require.alias("component-classes/index.js", "component-dom/deps/classes/index.js");
+require.alias("component-classes/index.js", "dom/deps/classes/index.js");
